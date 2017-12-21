@@ -1,0 +1,27 @@
+//
+//  Utilities.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/21/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import Foundation
+import UIKit
+
+
+/**
+ Creates a UIAlert and displays it on the ViewController passed in
+ 
+ - Parameters:
+ - message: Tme message to display in the Alert
+ - title: The title to display on the Alert
+ - viewController: The view controller on which to display the message
+ 
+ */
+func alert(message: String, title: String = "", viewController: UIViewController) {
+    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    let OKAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+    alertController.addAction(OKAction)
+    viewController.present(alertController, animated: true, completion: nil)
+}

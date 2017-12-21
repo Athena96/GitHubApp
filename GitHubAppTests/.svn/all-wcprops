@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests
+END
+PersistantStorageTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests/PersistantStorageTests.swift
+END
+GitHubRepositoryTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/fa17-cs242/!svn/ver/11058/franzon2/Assignment3.1/GitHubAppTests/GitHubRepositoryTests.swift
+END
+GitHubCommunicatorTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests/GitHubCommunicatorTests.swift
+END
+GitHubProfileTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests/GitHubProfileTests.swift
+END
+DataToJSONTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests/DataToJSONTests.swift
+END
+Info.plist
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/fa17-cs242/!svn/ver/11058/franzon2/Assignment3.1/GitHubAppTests/Info.plist
+END
+NetworkingTests.swift
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubAppTests/NetworkingTests.swift
+END

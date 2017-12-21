@@ -1,0 +1,56 @@
+//
+//  SignInViewController.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/26/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import UIKit
+
+/// View Controller Class that is in charge of getting the users password and username
+class SignInViewController: UIViewController, UITextFieldDelegate {
+    
+    /// Textfield to enter username
+    @IBOutlet weak var usernameTextField: UITextField!
+    
+    /// Textfield to enter password
+    @IBOutlet weak var passwordTextField: UITextField!
+    
+    /**
+     Called once when the view first loads
+     */
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        /* set this view controller as the delegate for the text fields
+        (so we can get notified when user presses 'return' key) */
+        usernameTextField.delegate = self
+        passwordTextField.delegate = self
+    }
+    
+    
+    /**
+     Called when user presses the return key
+     
+     - Parameter textField: the current text field the user is using
+     */
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        
+        // get text from text fields, store it, and enter app
+        if let username = usernameTextField.text, let password = passwordTextField.text {
+            
+            Profile.shared.username = username
+            Profile.shared.pass = password
+            
+            let vc = self.storyboard?.instantiateViewController(withIdentifier: "TabBarView") as! UITabBarController
+            self.present(vc, animated: true, completion: nil)
+
+        }
+        
+        return true
+        
+    }
+
+    
+}

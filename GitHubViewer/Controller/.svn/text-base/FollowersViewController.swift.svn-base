@@ -1,0 +1,220 @@
+//
+//  FollowersViewController.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/17/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import UIKit
+
+/// A class for the Follower view controller that fetches and displays the users follower information
+class FollowersViewController: UIViewController {
+    
+    /// table view that this class is connected to
+    @IBOutlet weak var tableView: UITableView!
+    
+    /// array of the users that follow the main user
+    var followers = [GitHubProfile]()
+    
+    /// maps buttons to their corresponding profiles
+    var buttonMap = [UIButton:GitHubProfile]()
+    
+    
+    /**
+     Called once when view first loads
+     */
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+    
+    
+    /**
+     Called everytime the view appears on screen
+     
+     - Parameter animated: animated or not
+     */
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // check if the user is logged in
+        if let username = Profile.shared.username {
+            
+            // fetch the users 'followers' information
+            GitHubCommunicator().fetchFollowInformationFor(user: username, followOrFollowing: "followers") { (fetchedFollowers, error) in
+                
+                // get the main queue so we can update the UI
+                DispatchQueue.main.async {
+
+                    self.followers.removeAll()
+
+                    if fetchedFollowers != nil {
+                        self.followers = fetchedFollowers!
+                        self.tableView.reloadData()
+
+                        // save data for offline use
+                        var usernames = [String]()
+                        for user in self.followers {
+                            usernames.append(user.username)
+                        }
+                        PersistantStorage.shared.save(usernames: usernames, ofType: PersistantStorage.UserType.Follower)
+                    }
+                    
+                    // no internet or error getting info, use offline data
+                    else {
+
+                        var arr = PersistantStorage.shared.fetchFollowUsers(type: PersistantStorage.UserType.Follower)!
+                        for a in arr {
+                            self.followers.append(GitHubProfile(name: "", username: a, avatarUrl: "", publicReposCount: 0, followersCount: 0, followingCount: 0, profileCreateDate: "", bio: "", website: ""))
+                        }
+                        self.tableView.reloadData()
+
+                    }
+                }
+            }
+            
+        } else {
+            alert(message: "Need to sign in.", title: "Not Signed In", viewController: self)
+        }
+        
+    }
+    
+    
+    /**
+     Called whe the user taps the follow button
+     */
+    @IBAction func followButtonTapped(_ sender: UIButton) {
+        
+        // get the user
+        let userAtRow = (buttonMap[sender]?.username)!
+
+        // if user wants to follow the other user
+        if sender.titleLabel?.text == "follow" {
+            
+            // update UI
+            sender.setTitle("following", for: .normal)
+            sender.tintColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
+            
+            // follow the other user
+            GitHubCommunicator().follow(user: userAtRow, { (success) in
+                    print(success)
+            })
+        } else {
+            
+            // update UI
+            sender.setTitle("follow", for: .normal)
+            sender.tintColor = #colorLiteral(red: 0.2392156869, green: 0.6745098233, blue: 0.9686274529, alpha: 1)
+            
+            // follow the other user
+            GitHubCommunicator().unfollow(user: userAtRow, { (success) in
+                    print(success)
+            })
+        }
+        
+    }
+    
+    /**
+     Called when user selects one of the users in the cell
+     
+     - Parameters:
+     segue: the segue to follow
+     sender: the button or cell that triggered the segue
+     */
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // pass the profile to display to the profile VC
+        if segue.identifier == "toProfileFromFollowers" ,
+            let nextScene = segue.destination as? ProfileViewController ,
+            let indexPath = self.tableView.indexPathForSelectedRow {
+            let selectedUser = followers[indexPath.row]
+            nextScene.profile = selectedUser
+        }
+    }
+    
+}
+
+/// extension that conforms to the UITableViewDelegate protocol
+extension FollowersViewController: UITableViewDelegate {
+    
+    /**
+     Is called when the user taps on a row in the tableview
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the row that was tapped
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+}
+
+
+/// extension that conforms to the UITableViewDataSource protocol
+extension FollowersViewController: UITableViewDataSource {
+    
+    /**
+     Calculates the number of rows in a section
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - section: which section the count is for
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return followers.count
+    }
+    
+    /**
+     Re-uses a cell and fills its info.
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the particular row
+     
+     - Returns: a cell with updated info
+     */
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        // deque the cell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "followerCell", for: indexPath) as? FollowInfoTableViewCell else {
+            return FollowInfoTableViewCell()
+        }
+        
+        // round image view
+        cell.followUserProfileImage.layer.cornerRadius = cell.followUserProfileImage.frame.size.width/2
+        cell.followUserProfileImage.layer.masksToBounds = true
+        
+        // get user for this row
+        let user = followers[indexPath.row]
+    
+        // update the user for the row button map
+        buttonMap[cell.followButton] = user
+        
+        // update cell info
+        cell.followButton.setTitle("follow", for: .normal)
+        cell.followUserNameLabel.text = "@"+user.username
+        
+        // fetch profile pic
+        if user.avatarUrl != "" && cell.imageView?.image == nil {
+            user.getProfilePic { (profilePic) in
+                DispatchQueue.main.async {
+                    if (profilePic != nil) {
+                        cell.followUserProfileImage.image = profilePic
+                    } else {
+                        cell.followUserProfileImage.backgroundColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    }
+                }
+            }
+        } else if cell.followUserProfileImage.image != nil {
+            // do nothing
+        }
+        else {
+            cell.followUserProfileImage.backgroundColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+        }
+        
+        return cell
+    }
+}

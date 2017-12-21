@@ -1,0 +1,233 @@
+//
+//  ProfileViewController.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/17/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import UIKit
+import SafariServices
+
+/// Class for the profile view controller, it communicates with the GitHub model and displays this info
+class ProfileViewController: UIViewController, SFSafariViewControllerDelegate {
+    
+    /// image view for profile image
+    @IBOutlet weak var profileImageView: UIImageView!
+    
+    /// label to hold the date the profile was created
+    @IBOutlet weak var profileCreationDateLabel: UILabel!
+    
+    /// label for username
+    @IBOutlet weak var usernameLabel: UILabel!
+    
+    /// label for user's bio
+    @IBOutlet weak var bioLabel: UILabel!
+    
+    /// buttons to for the users website, public repos, and follower information
+    @IBOutlet weak var websiteButton: UIButton!
+    @IBOutlet weak var publicProfilesButton: UIButton!
+    @IBOutlet weak var followersButton: UIButton!
+    @IBOutlet weak var followingButton: UIButton!
+    
+    /// property to hold the users profile
+    var profile: GitHubProfile?
+    
+    
+    /**
+     Called once when view first loads
+     */
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+    
+    
+    /**
+     Called everytime the view appears on screen
+     
+     - Parameter animated: animated or not
+     */
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(true)
+
+        // if the vc was NOT passed a profile to display, fetch from internet
+        if profile == nil {
+        
+            self.fetchData(forUser: (Profile.shared.username)!)
+            
+        }
+        // display the passed VC, and try to fetch its profil pic
+        else {
+            
+            self.updateUI()
+            
+            self.profile?.getProfilePic({ (profilePic) in
+                DispatchQueue.main.async {
+                    if profilePic != nil {
+                        self.profileImageView.image = profilePic
+                    } else {
+                        self.profileImageView.backgroundColor = #colorLiteral(red: 0.5704585314, green: 0.5704723597, blue: 0.5704649091, alpha: 1)
+                    }
+                }
+            })
+            
+        }
+        
+    }
+    
+    
+    /**
+     Called when the view is finished laying out its subviews.
+     Is used to make the image view round.
+     
+     */
+    override func viewDidLayoutSubviews() {
+        self.profileImageView.layer.cornerRadius = self.profileImageView.frame.size.width/2
+        self.profileImageView.layer.masksToBounds = true
+    }
+    
+    
+    /**
+     Fetches the data and, onece the data is downloaded, updates the UI
+     */
+    func fetchData(forUser username: String) {
+        
+        // if the user is signed in, fetch profile data
+        GitHubCommunicator().fetchProfileDataFor(user: username) { (fetchedProfile, error) in
+            
+            // get the main queue
+            DispatchQueue.main.async {
+                
+                if fetchedProfile != nil {
+                    self.profile = fetchedProfile!
+                    
+                    self.updateUI()
+                    
+                    self.profile?.getProfilePic({ (profilePic) in
+                        DispatchQueue.main.async {
+                            if profilePic != nil {
+                                self.profileImageView.image = profilePic
+                            } else {
+                                self.profileImageView.backgroundColor = #colorLiteral(red: 0.5704585314, green: 0.5704723597, blue: 0.5704649091, alpha: 1)
+                            }
+                        }
+                    })
+                    
+                    // save the fetched profile for future, offline use
+                    PersistantStorage.shared.saveMainUser(
+                        name: (self.profile?.name)!,
+                        username: (self.profile?.username)!,
+                        profileCreateDate: (self.profile?.profileCreateDate)!,
+                        bio: "",
+                        website: (self.profile?.website)!,
+                        publicRepoCount: (self.profile?.publicReposCount)!,
+                        followerCount: (self.profile?.followersCount)!,
+                        followingCount: (self.profile?.followingCount)!)
+                }
+                    
+                // no internet connection, use stored data
+                else {
+                    self.profile = PersistantStorage.shared.getMainUser()
+                    self.updateUI()
+                }
+                
+            } // end main queue
+        } // end network fetch
+    } // end func
+    
+    
+    /**
+     Is called when the user taps the website button
+     
+     - Parameter sender: the button itself
+     */
+    @IBAction func websiteButton(_ sender: UIButton) {
+        
+        let urlString = (sender.titleLabel?.text)!
+        
+        if let url = URL(string: urlString) {
+            let vc = SFSafariViewController(url: url)
+            vc.delegate = self
+            present(vc, animated: true)
+        }
+        
+    }
+    
+    /**
+     Is called in the SF View Controller when the user presses the 'Done' button
+     
+     - Parameter controller: the SF ViewController
+     */
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        dismiss(animated: true)
+    }
+    
+    /**
+     Is called when the user taps the public repos count button
+     
+     - Parameter sender: the button itself
+     */
+    @IBAction func publicReposButton(_ sender: UIButton) {
+        tabBarController?.selectedIndex = 0
+    }
+    
+    /**
+     Is called when the user taps the followers count button
+     
+     - Parameter sender: the button itself
+     */
+    @IBAction func followersButton(_ sender: UIButton) {
+        tabBarController?.selectedIndex = 2
+    }
+    
+    /**
+     Is called when the user taps the following count button
+     
+     - Parameter sender: the button itself
+     */
+    @IBAction func followingButton(_ sender: UIButton) {
+        tabBarController?.selectedIndex = 1
+    }
+    
+    /**
+     Is called after the class gets new info to display
+     */
+    func updateUI() {
+        if let profileInfo = profile {
+            self.usernameLabel.text = profileInfo.username
+            self.bioLabel.text = (profileInfo.bio == nil) ? "No Bio" : profileInfo.bio
+            self.websiteButton.setTitle((profileInfo.website == nil) ? "No Website" : profileInfo.website, for: .normal)
+            self.publicProfilesButton.setTitle(String(profileInfo.publicReposCount) + " public profiles", for: .normal)
+            self.followersButton.setTitle("followers "+String(profileInfo.followersCount), for: .normal)
+            self.followingButton.setTitle("following "+String(profileInfo.followingCount), for: .normal)
+            self.profileCreationDateLabel.text = (profileInfo.profileCreateDate).toDate()
+            self.title = profileInfo.name
+        } else {
+            self.usernameLabel.text = "-"
+            self.bioLabel.text = "-"
+            self.websiteButton.setTitle("-", for: .normal)
+            self.publicProfilesButton.setTitle("-", for: .normal)
+            self.followersButton.setTitle("-", for: .normal)
+            self.followingButton.setTitle("- ", for: .normal)
+            self.profileCreationDateLabel.text = "-/-/-"
+            self.title = "..."
+        }
+    }
+}
+
+extension String {
+    
+    /**
+     Converts a string date in format: 'ISO8601DateFormatter', to a more
+     human readable format
+     */
+    func toDate() -> String {
+        let dateFormatter = ISO8601DateFormatter()
+        let date = dateFormatter.date(from:self)!
+        let y = String(Calendar.current.component(Calendar.Component.year, from: date))
+        let m = String(Calendar.current.component(Calendar.Component.month, from: date))
+        let d = String(Calendar.current.component(Calendar.Component.day, from: date))
+        
+        return (m + "/" + d + "/" + y)
+    }
+}

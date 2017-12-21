@@ -1,0 +1,61 @@
+//
+//  PersistantStorageTests.swift
+//  GitHubAppTests
+//
+//  Created by Jared Franzone on 10/31/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import XCTest
+@testable import GitHubViewer
+
+class PersistantStorageTests: XCTestCase {
+    
+    var storage = PersistantStorage()
+    
+    
+    override func setUp() {
+        super.setUp()
+        // Put setup code here. This method is called before the invocation of each test method in the class.
+    }
+    
+    override func tearDown() {
+        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        super.tearDown()
+    }
+    
+    func testSaveAndLoadRepositories() {
+        
+        let r1 = GitHubRepository(name: "Repo 1", owner: "jared", readMe: "this is a good desc.", link: "www.repo1.com")
+        let r2 = GitHubRepository(name: "Repo 2", owner: "jim", readMe: "this is not a good desc.", link: "www.repo2.com")
+
+        storage.save(repos: [r1,r2])
+        
+        
+        let fetchedrepos = storage.fetchAllRepositories()
+        
+        XCTAssertTrue(fetchedrepos![0].name == "Repo 1")
+        XCTAssertTrue(fetchedrepos![1].name == "Repo 2")
+
+    }
+    
+    func testSaveAndLoadUsernames() {
+        
+        storage.save(usernames: ["user23", "user33", "user43"], ofType: PersistantStorage.UserType.Follower)
+        
+        storage.save(usernames: ["user24", "user34", "user44"], ofType: PersistantStorage.UserType.Following)
+        
+        let fetchedFollowers = storage.fetchFollowUsers(type: PersistantStorage.UserType.Follower)
+        
+        let fetchedFollowing = storage.fetchFollowUsers(type: PersistantStorage.UserType.Following)
+
+        XCTAssertTrue(fetchedFollowers![0] == "user23")
+        XCTAssertTrue(fetchedFollowers![1] == "user33")
+        XCTAssertTrue(fetchedFollowers![2] == "user43")
+
+        XCTAssertTrue(fetchedFollowing![0] == "user24")
+        XCTAssertTrue(fetchedFollowing![1] == "user34")
+        XCTAssertTrue(fetchedFollowing![2] == "user44")
+    }
+    
+}

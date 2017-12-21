@@ -1,0 +1,207 @@
+//
+//  RepositoriesViewController.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/17/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import UIKit
+import SafariServices
+import CloudKit
+
+/// A class for the Repositories view controller that fetches and displays the users repository information
+class RepositoriesViewController: UIViewController, SFSafariViewControllerDelegate {
+    
+    
+    /// table view that this class is connected to
+    @IBOutlet weak var tableView: UITableView!
+
+    /// array of the users public repositories
+    var repositories = [GitHubRepository]()
+
+    /// dictionary to map a button on a repo to its matching GitHubRepo
+    var buttonMap = [UIButton:GitHubRepository]()
+    
+    /**
+     Called once when view first loads
+     */
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+    
+    
+    /**
+     Called when user presses the return key
+     
+     - Parameter textField: the current text field the user is using
+     */
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        
+        // check if the user is logged in
+        if let username = Profile.shared.username {
+            
+            // fetch the users repository information
+            GitHubCommunicator().fetchRepositoriesFor(user: username) { (fetchedRepos, error) in
+                
+                // get the main queue so we can update the UI
+                DispatchQueue.main.async {
+
+                    self.repositories.removeAll()
+
+                    if fetchedRepos != nil{
+                    
+                        self.repositories = fetchedRepos!
+                        // save the new data on the device for future use
+                        PersistantStorage.shared.save(repos: self.repositories)
+                    
+                    }
+                    // no internet or error getting data
+                    else {
+                    
+                        // use saved data
+                        self.repositories = PersistantStorage.shared.fetchAllRepositories()!
+                    
+                    }
+                    
+                    self.tableView.reloadData()
+
+                }
+            }
+            
+        } else {
+            alert(message: "Need to sign in.", title: "Not Signed In", viewController: self)
+        }
+       
+    }
+
+    
+    /**
+     Called when user taps the 'start repo' button on one of the repos
+     
+     - Parameter sender: the button itselfs
+     */
+    @IBAction func starredButtonRepo(_ sender: UIButton) {
+
+        // get the repo for the button
+        let repo = buttonMap[sender]
+
+        // if user wants to start the repo
+        if (sender.titleLabel?.text)! == "not starred" {
+            // update UI
+            sender.setTitle("starred", for: .normal)
+            sender.setTitleColor(#colorLiteral(red: 0.9607843161, green: 0.7058823705, blue: 0.200000003, alpha: 1), for: .normal)
+            
+            // star the repo
+            GitHubCommunicator().star(repo: repo!, { (success) in
+                print(success)
+            })
+
+            
+        }
+        // user wants to unstar a repo
+        else {
+            
+            // update UI
+            sender.setTitle("not starred", for: .normal)
+            sender.setTitleColor(#colorLiteral(red: 0, green: 0.5898008943, blue: 1, alpha: 1), for: .normal)
+            
+            // un star the repo
+            GitHubCommunicator().unstar(repo: repo!, { (success) in
+                print(success)
+            })
+
+        }
+        
+    }
+    
+    
+    /**
+     Is called in the SF View Controller when the user presses the 'Done' button
+     
+     - Parameter controller: the SF ViewController
+     */
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        dismiss(animated: true)
+        let vc = self.storyboard?.instantiateViewController(withIdentifier: "TabBarView") as! UITabBarController
+        self.present(vc, animated: true, completion: nil)
+    }
+    
+}
+
+/// extension that conforms to the UITableViewDelegate protocol
+extension RepositoriesViewController: UITableViewDelegate {
+    
+    /**
+     Is called when the user taps on a row in the tableview
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the row that was tapped
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let repoLink = repositories[indexPath.row].link
+        
+        if let url = URL(string: repoLink) {
+            let vc = SFSafariViewController(url: url)
+            vc.delegate = self
+            present(vc, animated: true)
+        }
+        
+        self.tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+}
+
+/// extension that conforms to the UITableViewDataSource protocol
+extension RepositoriesViewController: UITableViewDataSource {
+    
+    /**
+     Calculates the number of rows in a section
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - section: which section the count is for
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return repositories.count
+    }
+    
+    /**
+     Re-uses a cell and fills its info.
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the particular row
+     
+     - Returns: a cell with updated info
+     */
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        // deque cell
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "repoCell", for: indexPath) as? RepositoryTableViewCell else {
+            return RepositoryTableViewCell()
+        }
+        
+        // get the repo
+        let repo = repositories[indexPath.row]
+
+        // save repo in button map
+        buttonMap[cell.starButton] = repo
+
+        // update cell info
+        cell.repoNameLabel.text = repo.name
+        cell.authorLabel.text = "@"+repo.owner
+        cell.descriptionLabel.text = repo.readMe ?? "No Description"
+        
+        return cell
+    }
+}
+
+
+

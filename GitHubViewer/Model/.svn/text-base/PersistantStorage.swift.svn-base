@@ -1,0 +1,143 @@
+//
+//  iCloud.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/29/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import Foundation
+import UIKit
+
+/// Class to store data offline
+class PersistantStorage: NSObject {
+
+    /// shared instance of the class
+    static let shared = PersistantStorage()
+    
+    /// user defaults
+    let userDefaults = UserDefaults.standard
+    
+    /// types of users
+    enum UserType {
+        case MainUser
+        case Follower
+        case Following
+    }
+    
+    
+    /**
+     Used to store an array of GitHubRepos on the device
+     - Parameters:
+     - repos: the repos to store
+     */
+    func save(repos: [GitHubRepository]) {
+        let data = NSKeyedArchiver.archivedData(withRootObject: repos)
+        userDefaults.set(data, forKey: "Repositories")
+        
+    }
+    
+    /**
+     Used to store the main user
+     - Parameters:
+     - all paramters to store
+     */
+    func saveMainUser(name: String, username: String, profileCreateDate: String, bio: String, website: String, publicRepoCount: Int, followerCount: Int, followingCount: Int) {
+        
+        userDefaults.set(name, forKey: "mainName")
+        userDefaults.set(username, forKey: "mainUsername")
+        userDefaults.set(profileCreateDate, forKey: "mainProfileCreateDate")
+        userDefaults.set(bio, forKey: "mainBio")
+        userDefaults.set(website, forKey: "mainWebsite")
+        userDefaults.set(publicRepoCount, forKey: "mainPublicRepoCount")
+        userDefaults.set(followerCount, forKey: "mainFollowerCount")
+        userDefaults.set(followingCount, forKey: "mainFollowingCount")
+        
+        
+    }
+
+    
+    
+    // used to save an array of strings
+    func save(usernames: [String], ofType type: UserType) {
+        switch type {
+        case .MainUser:
+            let data = NSKeyedArchiver.archivedData(withRootObject: (usernames.first)!)
+            userDefaults.set(data, forKey: "MainUser")
+        case .Follower:
+            let data = NSKeyedArchiver.archivedData(withRootObject: usernames)
+            userDefaults.set(data, forKey: "FollowerUsers")
+        case .Following:
+            let data = NSKeyedArchiver.archivedData(withRootObject: usernames)
+            userDefaults.set(data, forKey: "FollowingUsers")
+        }
+        
+    }
+    
+    // FETCH
+    func fetchAllRepositories() -> [GitHubRepository]? {
+        if let data = userDefaults.object(forKey: "Repositories") as? NSData {
+            let repos = NSKeyedUnarchiver.unarchiveObject(with: data as Data)
+            return repos as! [GitHubRepository]
+        } else {
+            return nil
+        }
+    }
+    
+    /**
+     Used to fetch the main user
+     - Parameters:
+     - repos: the repos to store
+     */
+    func getMainUser() -> GitHubProfile? {
+        guard let name = userDefaults.value(forKey: "mainName") as! String? else { return nil }
+        guard let username = userDefaults.value(forKey: "mainUsername") as! String? else { return nil }
+        guard let bio = userDefaults.value(forKey: "mainBio") as! String? else { return nil }
+        guard let website = userDefaults.value(forKey: "mainWebsite") as! String?  else { return nil }
+        guard let profileCreateDate = userDefaults.value(forKey: "mainProfileCreateDate") as! String! else { return nil }
+        guard let publicRepoCount = userDefaults.value(forKey: "mainPublicRepoCount") as! Int?  else { return nil }
+        guard let followerCount = userDefaults.value(forKey: "mainFollowerCount") as! Int? else { return nil }
+        guard let followingCount = userDefaults.value(forKey: "mainFollowingCount") as! Int? else { return nil }
+        
+        let user = GitHubProfile(name: name, username: username, avatarUrl: "", publicReposCount: publicRepoCount, followersCount: followerCount, followingCount: followingCount, profileCreateDate: profileCreateDate, bio: bio, website: website)
+        
+        return user
+        
+    }
+    
+//    func fetchMainUser() -> String? {
+//        if let data = userDefaults.object(forKey: "MainUser") as? NSData {
+//            let user = NSKeyedUnarchiver.unarchiveObject(with: data as Data)
+//            return user as! String
+//        } else {
+//            return nil
+//        }
+//    }
+
+    /**
+     Used to fetch an array of users
+     - Parameters:
+     - type: the type of user to fetch
+     */
+    func fetchFollowUsers(type: UserType) -> [String]? {
+        
+        if type == .Follower {
+            if let data = userDefaults.object(forKey: "FollowerUsers") as? NSData {
+                let users = NSKeyedUnarchiver.unarchiveObject(with: data as Data)
+                return users as! [String]
+            } else {
+                return nil
+            }
+        } else {
+            if let data = userDefaults.object(forKey: "FollowingUsers") as? NSData {
+                let users = NSKeyedUnarchiver.unarchiveObject(with: data as Data)
+                return users as! [String]
+            } else {
+                return nil
+            }
+        }
+        
+    }
+    
+}
+

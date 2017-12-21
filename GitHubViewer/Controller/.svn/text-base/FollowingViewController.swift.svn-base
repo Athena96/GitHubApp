@@ -1,0 +1,179 @@
+//
+//  FollowingViewController.swift
+//  GitHubViewer
+//
+//  Created by Jared Franzone on 10/17/17.
+//  Copyright © 2017 Jared Franzone. All rights reserved.
+//
+
+import UIKit
+
+/// A class for the Following view controller that fetches and displays the users follwing information
+class FollowingViewController: UIViewController {
+
+    /// table view that this class is connected to
+    @IBOutlet weak var tableView: UITableView!
+
+    /// array of the users that the main user follows
+    var following = [GitHubProfile]()
+    
+    /**
+     Called once when view first loads
+     */
+    override func viewDidLoad() {
+        super.viewDidLoad()
+    }
+    
+    /**
+     Called everytime the view appears on screen
+     
+     - Parameter animated: animated or not
+     */
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        // check if the user is logged in
+        if let username = Profile.shared.username {
+
+            // fetch the users 'follow' information
+            GitHubCommunicator().fetchFollowInformationFor(user: username, followOrFollowing: "following") { (fetchedFollowing, error)  in
+                
+                // get the main queue so we can update the UI
+                DispatchQueue.main.async {
+
+                    self.following.removeAll()
+
+                    if fetchedFollowing != nil {
+                        self.following = fetchedFollowing!
+                        self.tableView.reloadData()
+
+                        // store the data for offline use
+                        var usernames = [String]()
+                        for user in self.following {
+                            usernames.append(user.username)
+                        }
+                        PersistantStorage.shared.save(usernames: usernames, ofType: PersistantStorage.UserType.Following)
+                    
+                    }
+                    // no internet or error getting info, use offline data
+                    else {
+                        
+                        var arr = PersistantStorage.shared.fetchFollowUsers(type: PersistantStorage.UserType.Following)!
+                        for a in arr {
+                            self.following.append(GitHubProfile(name: "", username: a, avatarUrl: "", publicReposCount: 0, followersCount: 0, followingCount: 0, profileCreateDate: "", bio: "", website: ""))
+                        }
+                        
+                        self.tableView.reloadData()
+                    }
+                    
+
+                }
+            }
+        } else {
+            alert(message: "Need to sign in.", title: "Not Signed In", viewController: self)
+        }
+        
+    }
+    
+    /**
+     Called when user selects one of the users in the cell
+     
+     - Parameters:
+         segue: the segue to follow
+         sender: the button or cell that triggered the segue
+     */
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // pass the profile to display to the profile VC
+        if segue.identifier == "toProfileFromFollowing" ,
+            let nextScene = segue.destination as? ProfileViewController ,
+            let indexPath = self.tableView.indexPathForSelectedRow {
+                let selectedUser = following[indexPath.row]
+                nextScene.profile = selectedUser
+        }
+    }
+
+}
+
+/// extension that conforms to the UITableViewDelegate protocol
+extension FollowingViewController: UITableViewDelegate {
+    
+    /**
+     Is called when the user taps on a row in the tableview
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the row that was tapped
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        self.tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+}
+
+/// extension that conforms to the UITableViewDataSource protocol
+extension FollowingViewController: UITableViewDataSource {
+    
+    /**
+     Calculates the number of rows in a section
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - section: which section the count is for
+     
+     - Returns: the number of rows for a given section
+     */
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return following.count
+    }
+    
+    /**
+     Re-uses a cell and fills its info.
+     
+     - Parameters:
+     - tableView: our classes tableview
+     - indexPath: the particular row
+     
+     - Returns: a cell with updated info
+     */
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: "followingCell", for: indexPath) as? FollowInfoTableViewCell else {
+            return FollowInfoTableViewCell()
+        }
+        
+        // make profile image view round
+        cell.followUserProfileImage.layer.cornerRadius = cell.followUserProfileImage.frame.size.width/2
+        cell.followUserProfileImage.layer.masksToBounds = true
+        
+        // TODO: figure out who i follow and don't
+        cell.followButton.setTitle("following", for: .normal)
+        cell.followButton.tintColor = #colorLiteral(red: 0.4666666687, green: 0.7647058964, blue: 0.2666666806, alpha: 1)
+        
+        // get user for this row
+        let user = following[indexPath.row]
+        cell.followUserNameLabel.text = "@"+user.username
+        
+        // check if we have the users avatar url, if so try to fetch the profile pic
+        if user.avatarUrl != "" && cell.followUserProfileImage.image == nil {
+            user.getProfilePic { (profilePic) in
+                DispatchQueue.main.async {
+                    if (profilePic != nil) {
+                        cell.followUserProfileImage.image = profilePic
+                    } else {
+                        cell.followUserProfileImage.backgroundColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+                    }
+                }
+            }
+        }
+        else if cell.followUserProfileImage.image != nil {
+            // do nothing
+        }
+        else {
+            cell.followUserProfileImage.backgroundColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
+        }
+        
+        return cell
+    }
+}

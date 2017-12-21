@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/fa17-cs242/!svn/ver/11172/franzon2/Assignment3.1/GitHubViewer/Model
+END
+DataToJSON.swift
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/fa17-cs242/!svn/ver/11058/franzon2/Assignment3.1/GitHubViewer/Model/DataToJSON.swift
+END
+Networking.swift
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/fa17-cs242/!svn/ver/11058/franzon2/Assignment3.1/GitHubViewer/Model/Networking.swift
+END
+SharedProfile.swift
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubViewer/Model/SharedProfile.swift
+END
+PersistantStorage.swift
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubViewer/Model/PersistantStorage.swift
+END
+GitHubRepository.swift
+K 25
+svn:wc:ra_dav:version-url
+V 95
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubViewer/Model/GitHubRepository.swift
+END
+GitHubCommunicator.swift
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/fa17-cs242/!svn/ver/11172/franzon2/Assignment3.1/GitHubViewer/Model/GitHubCommunicator.swift
+END
+GitHubProfile.swift
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/fa17-cs242/!svn/ver/11166/franzon2/Assignment3.1/GitHubViewer/Model/GitHubProfile.swift
+END
